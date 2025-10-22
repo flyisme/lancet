@@ -1,0 +1,28 @@
+// OSS_ANDROID_TEMPLATE_FILE_HEADER
+/**
+ * New android-publish gradle script
+ *
+ * 1. Multiple flavors support.
+ * 2. Provide RELEASE_REPOSITORY_URL and SNAPSHOT_REPOSITORY_URL with gradle.properties or local.properties.
+ * 3. Provide REPOSITORY_USERNAME and REPOSITORY_PASSWORD if needed.
+ */
+apply plugin: 'maven-publish'
+
+group = "com.github.em_tool.lancet"
+version = VERSION_NAME_PREFIX+VERSION_NAME_SUFFIX
+
+/**
+ * Setup custom maven repo
+ */
+afterEvaluate {
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                groupId = project.group
+                artifactId = project.name    // 或者直接用 project.name
+                version = version
+                from components.java
+            }
+        }
+    }
+}

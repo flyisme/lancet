@@ -1,5 +1,5 @@
 apply plugin: 'java'
-
+apply from: rootProject.file('gradle/android-publish.gradle')
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation gradleApi()
