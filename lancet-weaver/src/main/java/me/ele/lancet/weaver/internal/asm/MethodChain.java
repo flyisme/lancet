@@ -116,11 +116,11 @@ public class MethodChain {
 
             @Override
             public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
-                if (opcode == AopMethodAdjuster.OP_CALL) {
+                if ((opcode & AopMethodAdjuster.MASK) == (AopMethodAdjuster.OP_CALL & AopMethodAdjuster.MASK)) {
                     head.loadArgsAndInvoke(mv);
-                } else if (opcode == AopMethodAdjuster.OP_THIS_GET_FIELD) {
+                } else if ((opcode & AopMethodAdjuster.MASK) == (AopMethodAdjuster.OP_THIS_GET_FIELD & AopMethodAdjuster.MASK)) {
                     dealField(Opcodes.GETFIELD, name, mv);
-                } else if (opcode == AopMethodAdjuster.OP_THIS_PUT_FIELD) {
+                } else if ((opcode & AopMethodAdjuster.MASK) == (AopMethodAdjuster.OP_THIS_PUT_FIELD & AopMethodAdjuster.MASK)) {
                     dealField(Opcodes.PUTFIELD, name, mv);
                 } else {
                     super.visitMethodInsn(opcode, owner, name, desc, itf);

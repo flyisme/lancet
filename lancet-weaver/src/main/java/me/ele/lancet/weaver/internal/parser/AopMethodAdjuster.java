@@ -14,6 +14,7 @@ import org.objectweb.asm.tree.*;
 public class AopMethodAdjuster {
 
     public static final int OP_CALL = Integer.MAX_VALUE;
+    public static final int MASK = 0x7FFFFEFF;
     public static final int OP_THIS_GET_FIELD = OP_CALL - 1;
     public static final int OP_THIS_PUT_FIELD = OP_THIS_GET_FIELD - 1;
 
