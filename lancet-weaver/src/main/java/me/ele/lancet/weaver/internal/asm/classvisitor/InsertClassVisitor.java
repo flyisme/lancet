@@ -65,11 +65,15 @@ public class InsertClassVisitor extends LinkedClassVisitor {
                     Log.tag("transform").i(
                             " from " + e.sourceClass + "." + e.sourceMethod.name);
                     String methodName = e.sourceClass.replace("/", "_") + "_" + e.sourceMethod.name;
+                    chain.collectAnnotations(e.threadLocalNode());
                     chain.next(owner, Opcodes.ACC_STATIC, methodName, staticDesc, e.threadLocalNode(), cv);
                 });
                 chain.fakePreMethod(getContext().name, access, name, desc, signature, exceptions);
 
-                return super.visitMethod(newAccess, newName, desc, signature, exceptions);
+                // 移除 原方法注解
+                return new AnnotationStrippingMethodVisitor(
+                        super.visitMethod(newAccess, newName, desc, signature, exceptions)
+                );
             }
         }
         return super.visitMethod(access, name, desc, signature, exceptions);
@@ -98,5 +102,32 @@ public class InsertClassVisitor extends LinkedClassVisitor {
 
         }
         super.visitEnd();
+    }
+
+    private class AnnotationStrippingMethodVisitor extends MethodVisitor {
+        public AnnotationStrippingMethodVisitor(MethodVisitor methodVisitor) {
+            super(Opcodes.ASM6,methodVisitor);
+        }
+
+        @Override
+        public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+//            return super.visitAnnotation(descriptor, visible);
+            Log.tag("transform").d("Stripping annotation: " + descriptor);
+            //丢弃注解
+            return null;
+        }
+        @Override
+        public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath,
+                                                     String descriptor, boolean visible) {
+            // 同样丢弃类型注解（Java 8+）
+            return null;
+        }
+
+        @Override
+        public AnnotationVisitor visitParameterAnnotation(int parameter,
+                                                          String descriptor, boolean visible) {
+            // 丢弃参数注解
+            return null;
+        }
     }
 }

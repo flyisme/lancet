@@ -13,11 +13,14 @@ import me.ele.lancet.weaver.internal.util.PrimitiveUtil;
 import me.ele.lancet.weaver.internal.util.TypeUtil;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -41,6 +44,9 @@ public class MethodChain {
 
     private Map<String, FieldEntity> fieldMap;
     private Map<String, Invoker> invokerMap = new HashMap<>();
+
+    private List<AnnotationNode> annotations = new ArrayList<>();
+    private List<List<AnnotationNode>> parameterAnnotations = new ArrayList<>();
 
 
     public MethodChain(String className, ClassVisitor base, Graph graph) {
@@ -81,6 +87,25 @@ public class MethodChain {
         head(access, TypeUtil.isStatic(access) ? Opcodes.INVOKESTATIC : Opcodes.INVOKESPECIAL, owner, name, desc);
     }
 
+    /**
+     * 收集原方法的注解信息
+     */
+    public void collectAnnotations(MethodNode originalMethod) {
+        if (originalMethod.visibleAnnotations != null) {
+            this.annotations.addAll(originalMethod.visibleAnnotations);
+        }
+        if (originalMethod.invisibleAnnotations != null) {
+            this.annotations.addAll(originalMethod.invisibleAnnotations);
+        }
+        // 收集参数注解
+        if (originalMethod.visibleParameterAnnotations != null) {
+            for (List<AnnotationNode> paramAnnos : originalMethod.visibleParameterAnnotations) {
+                if (paramAnnos != null) {
+                    this.parameterAnnotations.add(new ArrayList<>(paramAnnos));
+                }
+            }
+        }
+    }
 
     public void next(String className, int access, String name, String desc, MethodNode node, ClassVisitor cv) {
         String[] exs = (String[]) node.exceptions.toArray(new String[0]);
@@ -149,6 +174,30 @@ public class MethodChain {
 
     public void fakePreMethod(String className, int access, String name, String desc, String signature, String[] exceptions) {
         MethodVisitor mv = base.visitMethod(access, name, desc, null, exceptions);
+
+        // 注解到新方法
+        for (AnnotationNode anno : annotations) {
+            AnnotationVisitor av = mv.visitAnnotation(anno.desc, true);
+            if (av != null && anno.values != null) {
+                for (int i = 0; i < anno.values.size(); i += 2) {
+                    av.visit((String) anno.values.get(i), anno.values.get(i + 1));
+                }
+                av.visitEnd();
+            }
+        }
+
+        // 参数注解
+        for (int i = 0; i < parameterAnnotations.size(); i++) {
+            for (AnnotationNode paramAnno : parameterAnnotations.get(i)) {
+                AnnotationVisitor av = mv.visitParameterAnnotation(i, paramAnno.desc, true);
+                if (av != null && paramAnno.values != null) {
+                    for (int j = 0; j < paramAnno.values.size(); j += 2) {
+                        av.visit((String) paramAnno.values.get(j), paramAnno.values.get(j + 1));
+                    }
+                    av.visitEnd();
+                }
+            }
+        }
 
         createMethod(access, desc, head.action()).accept(mv);
 
