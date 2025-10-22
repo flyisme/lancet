@@ -3,7 +3,9 @@ package me.ele.lancet.plugin.internal;
 import com.android.build.api.transform.JarInput;
 import com.android.build.api.transform.QualifiedContent;
 import com.android.build.api.transform.Status;
-import com.android.utils.FileUtils;
+
+import org.apache.tools.ant.util.FileUtils;
+
 import com.google.common.io.Files;
 
 import java.io.BufferedOutputStream;
@@ -44,10 +46,10 @@ public class TransformProcessor implements ClassFetcher {
             File targetFile = context.getRelativeFile(content);
             switch (jarInput.getStatus()) {
                 case REMOVED:
-                    FileUtils.deleteIfExists(targetFile);
+                    FileUtils.delete(targetFile);
                     return false;
                 case CHANGED:
-                    FileUtils.deleteIfExists(targetFile);
+                    FileUtils.delete(targetFile);
                 default:
                     Files.createParentDirs(targetFile);
                     map.put(content, new JarRunner(content, targetFile));
@@ -67,12 +69,12 @@ public class TransformProcessor implements ClassFetcher {
             File hookWithTarget = Util.toSystemDependentHookFile(relativeRoot, relativePath);
             switch (status) {
                 case REMOVED:
-                    FileUtils.deleteIfExists(target);
-                    FileUtils.deleteIfExists(hookWithTarget);
+                    FileUtils.delete(target);
+                    FileUtils.delete(hookWithTarget);
                     break;
                 case CHANGED:
-                    FileUtils.deleteIfExists(target);
-                    FileUtils.deleteIfExists(hookWithTarget);
+                    FileUtils.delete(target);
+                    FileUtils.delete(hookWithTarget);
                 default:
                     dirRunner.run(relativeRoot, relativePath, bytes);
             }

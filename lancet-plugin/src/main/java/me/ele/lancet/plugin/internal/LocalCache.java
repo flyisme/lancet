@@ -1,12 +1,12 @@
 package me.ele.lancet.plugin.internal;
 
 import com.android.build.api.transform.Status;
+import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 
-import org.apache.commons.io.Charsets;
 
 import java.io.File;
 import java.io.IOException;

@@ -2,6 +2,7 @@ package me.ele.lancet.plugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +41,7 @@ public class ClassFileUtil {
             dir.mkdirs();
         }
         try {
-            com.google.common.io.Files.copy(source,target);
+            Files.copy(source.toPath(),target.toPath());
         } catch (IOException e) {
             e.printStackTrace();
         }

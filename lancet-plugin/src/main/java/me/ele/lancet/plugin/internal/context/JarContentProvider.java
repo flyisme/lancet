@@ -4,7 +4,6 @@ import com.android.build.api.transform.JarInput;
 import com.android.build.api.transform.QualifiedContent;
 import com.google.common.io.ByteStreams;
 
-import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -33,7 +32,12 @@ public class JarContentProvider extends TargetedQualifiedContentProvider {
                 byte[] data = ByteStreams.toByteArray(zis);
                 processor.onClassFetch(jarInput, jarInput.getStatus(), entry.getName(), data);
             }
-            IOUtils.closeQuietly(zis);
+            try {
+                if (zis != null) {
+                    zis.close();
+                }
+            } catch (IOException var2) {
+            }
         }
         processor.onComplete(jarInput);
     }
