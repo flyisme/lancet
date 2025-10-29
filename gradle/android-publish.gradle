@@ -11,18 +11,94 @@ apply plugin: 'maven-publish'
 group = "com.github.em_tool.lancet"
 version = VERSION_NAME_PREFIX+VERSION_NAME_SUFFIX
 
+def isReleaseBuild() {
+    return version.contains("SNAPSHOT") == false
+}
+
+def getReleaseRepositoryUrl() {
+    return hasProperty('RELEASE_REPOSITORY_URL') ? RELEASE_REPOSITORY_URL : readPropertyFromLocalProperties('RELEASE_REPOSITORY_URL')
+}
+
+def getSnapshotRepositoryUrl() {
+    return hasProperty('SNAPSHOT_REPOSITORY_URL') ? SNAPSHOT_REPOSITORY_URL : readPropertyFromLocalProperties('SNAPSHOT_REPOSITORY_URL')
+}
+
+def readPropertyFromLocalProperties(String key) {
+    Properties properties = new Properties()
+    try {
+        properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    } catch (Exception e) {
+        println("load local properties failed msg:${e.message}")
+    }
+    return properties.getProperty(key)
+}
+
+def getRepositoryUsername() {
+    return hasProperty('REPOSITORY_USERNAME') ? REPOSITORY_USERNAME : readPropertyFromLocalProperties('REPOSITORY_USERNAME')
+}
+
+def getRepositoryPassword() {
+    return hasProperty('REPOSITORY_PASSWORD') ? REPOSITORY_PASSWORD : readPropertyFromLocalProperties('REPOSITORY_PASSWORD')
+}
+
 /**
  * Setup custom maven repo
  */
-afterEvaluate {
-    publishing {
-        publications {
-            maven(MavenPublication) {
-                groupId = project.group
-                artifactId = project.name    // 或者直接用 project.name
-                version = version
-                from components.java
-            }
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = project.group
+            artifactId = project.name    // 或者直接用 project.name
+            version = version
+            from components.java
         }
+    }
+    repositories {
+        maven {
+            url "${isReleaseBuild() ? getReleaseRepositoryUrl() : getSnapshotRepositoryUrl()}"
+            credentials {
+                username "${getRepositoryUsername()}"
+                password "${getRepositoryPassword()}"
+            }
+            allowInsecureProtocol = true // 如果需要
+        }
+    }
+}
+
+if (JavaVersion.current().isJava8Compatible()) {
+    allprojects {
+        tasks.withType(Javadoc) {
+            options.addStringOption('Xdoclint:none', '-quiet')
+        }
+    }
+}
+
+task buildAndPublishToLocalMaven(type: Copy, dependsOn: ['publishToMavenLocal']) {
+    group = 'publishing'
+
+    // save artifacts files to artifacts folder
+    from configurations.archives.allArtifacts.files
+    into "${rootProject.buildDir}/outputs/artifacts/"
+    rename { String fileName ->
+        fileName.replace("release.aar", "${version}.aar")
+    }
+
+    doLast {
+        println "* published to maven local: ${project.group}:${project.name}:${project.version}"
+    }
+}
+
+task buildAndPublishRepo(type: Copy, dependsOn: ['publish']) {
+    group = "publishing"
+
+    // save artifacts files to artifacts folder
+    from configurations.archives.allArtifacts.files
+    into "${rootProject.buildDir}/outputs/artifacts/"
+    rename { String fileName ->
+        fileName.replace("release.aar", "${version}.aar")
+    }
+
+    doLast {
+        println "* published to repo: ${project.group}:${project.name}:${project.version}"
     }
 }
